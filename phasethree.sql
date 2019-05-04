@@ -52,6 +52,23 @@ ALTER TABLE Card ADD CONSTRAINT Card_Pname FOREIGN KEY (Username) REFERENCES Pla
 ALTER TABLE Card ADD CONSTRAINT Card_LLocation FOREIGN KEY (LLocation) REFERENCES Location(Locationname);
 
 
+--Example of Insertion of Card info.
+--INSERT INTO Card VALUES (Cardname, DBID, OracleID, foil, LLocation, Sname, Pname, ColorID, ColorIDtwo, ColorIDthree, ColorIDfour, ColorIDfive, Banlist, Banlisttwo, Banlistthree, Banlistfour, Banlistfive);
+INSERT INTO Card VALUES ('Cardname', 1, 01, 0, 'Binderone', 'Setone', 'Liz', 'Blue', 'Green', null, null, null, 'Standard', null, null, null, null);
+
+--Example of only inserting specific information into Card.
+INSERT INTO Card (DBID, foil, LLocation, Pname) VALUES (1, 0, 'Binderone', 'Liz');
+
+--Example of Player data.
+INSERT INTO Player VALUES ('TheLiz', 'MyPassword', 'Liz', 'Smith');
+
+--Example of Cardset Data.
+INSERT INTO Cardset VALUES ('Setone', '1988-12-30');
+
+--Example of Location Data.
+INSERT INTO Location VALUES ('Binderone');
+
+
 
 --Get all of the cards owned by a certain player.
 SELECT C.*
