@@ -53,6 +53,37 @@ ALTER TABLE Card ADD CONSTRAINT Card_LLocation FOREIGN KEY (LLocation) REFERENCE
 
 
 
+--Get all of the cards owned by a certain player.
+SELECT C.*
+FROM Card C, Player P
+WHERE C.Pname=P.Username;
+
+--Get the information of the owner of the card (optional, may not be needed).
+SELECT P.*
+FROM Card C, Player P
+WHERE C.Pname=P.Username;
+
+--Get all of the information of cards stored in a given location.
+SELECT C.*
+FROM Card C, Location L
+WHERE C.LLocation=L.Locationname;
+
+--Get the information of a location that a card is in.
+SELECT L.*
+FROM Card C, Location L
+WHERE C.LLocation=L.Locationname;
+
+--Get the information of all cards belonging to a certain set.
+SELECT C.*
+FROM Card C, Cardset S
+WHERE C.Sname=S.Setname;
+
+--Get the information of the set that a card belongs to.
+SELECT S.*
+FROM Card C, Cardset S
+WHERE C.Sname=S.Setname;
+
+
 
 
 
