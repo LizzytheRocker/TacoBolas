@@ -10,6 +10,7 @@ CREATE TABLE Player
     PRIMARY KEY (Username)
 );
 
+/*
 CREATE TABLE Card
 (
     Cardname   varchar(100),
@@ -45,13 +46,77 @@ CREATE TABLE Location
     Locationname   varchar(100),
     PRIMARY KEY (Locationname)
 );
+*/
 
 
-ALTER TABLE Card ADD CONSTRAINT Card_Sname FOREIGN KEY (Sname) REFERENCES Cardset(Setname);
+
+CREATE TABLE Card
+(
+    DBID     int,
+    OracleID     int,
+    foil int,
+    LLocation   varchar(100),
+	Sname   varchar(100),
+	Pname   varchar(100),
+    PRIMARY KEY (DBID, OracleID)
+);
+
+CREATE TABLE Carddata
+(
+    OID     int,
+    Cardname   varchar(100),
+    ColW	boolean,
+	ColU	boolean,
+	ColB	boolean,
+	ColR	boolean,
+	ColG	boolean,
+	Banstan	boolean,
+	Banpouper	boolean,
+	Banmodern	boolean,
+	Banponny	boolean,
+	Bancommander	boolean,
+    PRIMARY KEY (DBID)
+);
+
+
+
+
+
+--ALTER TABLE Card ADD CONSTRAINT Card_Sname FOREIGN KEY (Sname) REFERENCES Cardset(Setname);
 ALTER TABLE Card ADD CONSTRAINT Card_Pname FOREIGN KEY (Username) REFERENCES Player(Username);
-ALTER TABLE Card ADD CONSTRAINT Card_LLocation FOREIGN KEY (LLocation) REFERENCES Location(Locationname);
+--ALTER TABLE Card ADD CONSTRAINT Card_LLocation FOREIGN KEY (LLocation) REFERENCES Location(Locationname);
+ALTER TABLE Carddata ADD CONSTRAINT Carddata_OID FOREIGN KEY (OracleID) REFERENCES Card(OracleID);
 
 
+
+
+
+SELECT C.*
+FROM Card C, Player P
+WHERE C.Pname=P.Username;
+
+--Get the information of the owner of the card (optional, may not be needed).
+SELECT P.*
+FROM Card C, Player P
+WHERE C.Pname=P.Username;
+
+
+SELECT C.*
+FROM Card C, Carddata L
+WHERE C.OracleID =L.OID;
+
+SELECT L.*
+FROM Card C, Location L
+WHERE C.OracleID =L.OID;
+
+
+
+
+
+
+
+
+/*
 --Example of Insertion of Card info.
 --INSERT INTO Card VALUES (Cardname, DBID, OracleID, foil, LLocation, Sname, Pname, ColorID, ColorIDtwo, ColorIDthree, ColorIDfour, ColorIDfive, Banlist, Banlisttwo, Banlistthree, Banlistfour, Banlistfive);
 INSERT INTO Card VALUES ('Cardname', 1, 01, 0, 'Binderone', 'Setone', 'Liz', 'Blue', 'Green', null, null, null, 'Standard', null, null, null, null);
@@ -99,7 +164,7 @@ WHERE C.Sname=S.Setname;
 SELECT S.*
 FROM Card C, Cardset S
 WHERE C.Sname=S.Setname;
-
+*/
 
 
 
