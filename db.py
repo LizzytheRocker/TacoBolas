@@ -11,7 +11,7 @@ class Mdb:
         host = "localhost",
         user = "root",
         passwd = "Taco",
-        database = "magiclocation"
+        database = "magicloc"
       )
       self.cur = mydb.cursor()
     except:
@@ -21,50 +21,35 @@ class Mdb:
         passwd = "Taco"
       )
       self.cur = self.mydb.cursor()
-      self.cur.execute("CREATE DATABASE magiclocation")
+      self.cur.execute("CREATE DATABASE magicloc")
       
       self.cur.execute("SHOW TABLES")
 
       if not self.cur:
         self.cur.execute("CREATE TABLE Player (Username varchar(32), Password varchar(32) NOT NULL, Firstname varchar(32), Lastname varchar(32), PRIMARY KEY (Username))")
-        self.cur.execute("CREATE TABLE Card (Cardname varchar(100), DBID int AUTO_INCREMENT, OracleID int, foil int, LLocation varchar(100), Sname varchar(100), Uname varchar(100), ColorW bool, ColorU bool, ColorB bool, ColorR bool, ColorG bool, BanStandard bool, BanPauper bool, BanModern bool, BanPenny bool, BanCommander bool, PRIMARY KEY (DBID))")
-        self.cur.execute("CREATE TABLE Cardset (Setname varchar(32), Datereleased date, PRIMARY KEY (Setname))")
-        self.cur.execute("CREATE TABLE Location (Locationname varchar(100), PRIMARY KEY (Locationname))")
+        self.cur.execute("CREATE TABLE Card (DBID int AUTO_INCREMENT, OracleID varchar(255), foil int, LLocation varchar(100), Sname varchar(100), Uname varchar(100), PRIMARY KEY (DBID, OracleID))")
+        self.cur.execute("CREATE TABLE Carddata (OracleID varchar(255), Cardname varchar(100), ColorW boolean, ColorU boolean, ColorB boolean, ColorR boolean, ColorG boolean, BanStandard boolean, BanPauper boolean, BanModern boolean, BanPenny boolean, BanCommander boolean, PRIMARY KEY (OracleID))")
 
-        self.cur.execute("ALTER TABLE Card ADD CONSTRAINT Card_Sname FOREIGN KEY (Sname) REFERENCES Cardset(Setname)")
         self.cur.execute("ALTER TABLE Card ADD CONSTRAINT Card_Uname FOREIGN KEY (Uname) REFERENCES Player(Username)")
-        self.cur.execute("ALTER TABLE Card ADD CONSTRAINT Card_LLocation FOREIGN KEY (LLocation) REFERENCES Location(Locationname)")
+        self.cur.execute("ALTER TABLE Carddata ADD CONSTRAINT Card_OID FOREIGN KEY (OracleID) REFERENCES Card(OracleID)")
   
+  def findOID(self, OID): ####Rember res is a tuple. so.... if its not none i think
+    search = "SELECT D.OracleID FROM Carddata AS D WHERE D.OracleID = '{}'".format(OID)
+    self.cur.execute(search)
+    res = self.cur.fetchall()
+    return res
+
   # insert card
   def insertWholeCard(self, Cardname, OracleID, foil, LLocation, Sname, ColorW=0, ColorU=0, ColorB=0, ColorR=0, ColorG=0, BanStandard=0, BanPauper=0, BanModern=0, BanPenny=0, BanCommander=0):
-    #if set not in set table
-    ST = "SELECT S.Setname FROM Cardset"
-    self.cur.execute(ST)
-    S  =self.cur.fetchall()
-    missing = True
-    for t in S:
-      if Sname == t[0]:
-        missing = False
-        break
-    if missing:
-      self.insertCardset(Sname)
-    #if location not in table
-    LN = "SELECT L.Locationname FROM Location L"
-    self.cur.execute(LN)
-    L =self.cur.fetchall()
-    missing=True
-    for t in L:
-      if LLocation == t[0]:
-        missing = False
-        break
-    if missing:
-      self.insertLocation(LLocation)
-
-    param = "INSERT INTO Card VALUES('{}', {}, {}, '{}', '{}', '{}', {}, {}, {}, {}, {}, {}, {}, {}, {}, {})".format(Cardname, OracleID, foil, LLocation, Sname, self.currentPlayer, ColorW, ColorU, ColorB, ColorR, ColorG, BanStandard, BanPauper, BanModern, BanPenny, BanCommander)
-    self.cur.execute(param)
+    param1 = "INSERT INTO Card VALUES('{}', {}, '{}', '{}', '{}')".format(OracleID, foil, LLocation, Sname, self.currentPlayer)
+    self.cur.execute(param1)
     self.mydb.commit()
+    if len(findOID(OracleID)) == 0: #thanks
+      param2 = "INSERT INTO Carddata VALUES ('{}', '{}', {}, {}, {}, {}, {}, {}, {}, {}, {}, {})".format(OracleID, Cardname, ColorW, ColorU, ColorB, ColorR, ColorG, BanStandard, BanPauper, BanModern, BanPenny, BanCommander)
+      self.cur.execute(param2)
+      self.mydb.commit()
 
-  # log in?
+  # log in
   def logIn(self, username, password):
     #check if username/password combo match entry in db
     param ="SELECT P.Username, P.Password FROM Player P WHERE P.Username = '{}'".format(username)
@@ -72,7 +57,7 @@ class Mdb:
     pw=self.cur.fetchall()
     Accept = False
     for x in pw:
-      if x[1]==password:
+      if x[1]==password and x[0]==username:
         Accept=True
     #select the password
     if Accept:
@@ -93,125 +78,84 @@ class Mdb:
     self.cur.execute(param)
     self.mydb.commit()
     return True
-    # login
-
-  # insert location
-  def insertLocation(self, locationname):
-    LN = "SELECT L.Locationname FROM Location L"
-    self.cur.execute(LN)
-    L =self.cur.fetchall()
-    missing=True
-    for t in L:
-      if locationname == t[0]:
-        missing = False
-        break
-    if missing:
-      param = "INSERT INTO Location VALUES ('{}')".format(locationname) 
-      self.cur.execute(param)
-      self.mydb.commit()
+    # redirect player to login
 
   def deletePlayer(self,username):
-    par="DELETE FROM Player WHERE username = '{}'".format(username)
+    par="DELETE FROM Player WHERE Username = '{}' CASCADE".format(username)
     self.cur.execute(par)
     self.mydb.commit()
-
-  #insert cardset
-  def insertCardset(self, Setname, Datereleased="NULL"):
-    ST = "SELECT S.Setname FROM Cardset"
-    self.cur.execute(ST)
-    S  =self.cur.fetchall()
-    missing = True
-    for t in S:
-      if Setname == t[0]:
-        missing = False
-        break
-    if missing:
-      par = "INSERT INTO Cardset VALUES ('{}','{}')".format(Setname,Datereleased)
-      self.cur.execute(par)
-      self.mydb.commit()
   
   # find card functions- By name, by color id, by banned or not, by foil, by set, -alot need to return dbid.. nvm lol.
 
   def CardsOwned(self):
-    search = "SELECT * FROM Card AS C WHERE C.Pname='{}'".format(self.currentPlayer)
+    search = "SELECT D.Cardname, C.foil, C.LLocation, C.Sname, D.ColorW, D.ColorU, D.ColorB, D.ColorR, D.ColorG, D.BanStandard, D.BanPauper, D.BanModern, D.BanPenny, D.BanCommander FROM Card as C, Carddata as D WHERE C.OracleID = D.OracleID AND C.Uname = '{}'".format(self.currentPlayer)
     self.cur.execute(search)
     res = self.cur.fetchall()
-    #don't worry about printing it here, just return the res. I think its a tuple of tuples
-    #for x in res:
-    #  print(x)
     return res
     
   def CardbyName(self, name):
-    if self.isLoggedIn():
-      search = "SELECT * FROM Card AS C WHERE C.Pname = '{}' AND C.Cardname = '{}'".format(self.currentPlayer, name)
-      self.cur.execute(search)
-      res = self.cur.fetchall()
-      return res
-  
-  def CardbyCI(self, ci): #i think ci will be a list but i'm unsure
-    if self.isLoggedIn():
-      return
-  
-  def banList(self, format): 
-    if self.isLoggedIn():
-      search = "SELECT * FROM Card AS C WHERE C.Pname = {} AND C.Ban{} = 1".format(self.currentPlayer, format)
-      self.cur.execute(search)
-      res = self.cur.fetchall()
-      return res
-
-  def notBanned(self, format):
-    if self.isLoggedIn():
-      search = "SELECT * FROM Card AS C WHERE C.Pname = {} AND C.Ban{} = 0".format(self.currentPlayer, format)
-      self.cur.execute(search)
-      res = self.cur.fetchall()
-      return res
-
-  def CardinFoil(self, name):
-    if self.isLoggedIn():
-      search = "SELECT * FROM Card AS C WHERE C.Pname = {} AND C.Cardname = '{}' AND C.foil = 1".format(self.currentPlayer, name)
-      self.cur.execute(search)
-      res = self.cur.fetchall()
-      return res
-
-  def CardsinSet(self, set):
-    if self.isLoggedIn():
-      search = "SELECT * FROM Card AS C WHERE C.Pname = {} AND C.Sname = '{}'".format(self.currentPlayer, set)
-      self.cur.execute(search)
-      res = self.cur.fetchall()
-      return res
-
-  def CardsinLoc(self, loc):
-    if self.isLoggedIn():
-      search = "SELECT * FROM Card AS C WHERE C.Pname = {} AND C.LLocation = '{}'".format(self.currentPlayer, loc)
-      self.cur.execute(search)
-      res = self.cur.fetchall()
-      return res
-  
-  def doesLocExist(self, loc):
-    search = "SELECT Locationname FROM Location AS L WHERE L.Locationname = '{}'"
+    search = "SELECT D.Cardname, C.foil, C.LLocation, C.Sname, D.ColorW, D.ColorU, D.ColorB, D.ColorR, D.ColorG, D.BanStandard, D.BanPauper, D.BanModern, D.BanPenny, D.BanCommander FROM Card as C, Carddata as D WHERE C.OracleID = D.OracleID AND C.Uname = '{}' AND D.Cardname = '{}'".format(self.currentPlayer, name)
     self.cur.execute(search)
     res = self.cur.fetchall()
-    return (False, True)[res]
+    return res
   
-  # edit card location
-  def editCardL(self, DBID, location):
-    if self.isLoggedIn():
-      if not self.doesLocExist(location):
-        self.insertLocation(location)
-      edit = "UPDATE Card AS C SET C.LLocation = '{}' WHERE C.Pname = '{}' AND C.DBID = {}".format(location, self.currentPlayer, DBID)
-      self.cur.execute(edit)
+  def CardbyCI(self, ci): #i think ci will be a list but i'm unsure
+    return
+  
+  def banList(self, format): 
+    search = "SELECT D.Cardname, C.foil, C.LLocation, C.Sname, D.ColorW, D.ColorU, D.ColorB, D.ColorR, D.ColorG, D.BanStandard, D.BanPauper, D.BanModern, D.BanPenny, D.BanCommander FROM Card as C, Carddata as D WHERE C.OracleID = D.OracleID AND C.Uname = '{}' AND D.Ban{} = 1".format(self.currentPlayer, format)
+    self.cur.execute(search)
+    res = self.cur.fetchall()
+    return res
 
-  # delete card
+  def notBanned(self, format):
+    search = "SELECT D.Cardname, C.foil, C.LLocation, C.Sname, D.ColorW, D.ColorU, D.ColorB, D.ColorR, D.ColorG, D.BanStandard, D.BanPauper, D.BanModern, D.BanPenny, D.BanCommander FROM Card as C, Carddata as D WHERE C.OracleID = D.OracleID AND C.Uname = '{}' AND D.Ban{} = 0".format(self.currentPlayer, format)
+    self.cur.execute(search)
+    res = self.cur.fetchall()
+    return res
+
+  def CardinFoil(self, name):
+    search = "SELECT D.Cardname, C.foil, C.LLocation, C.Sname, D.ColorW, D.ColorU, D.ColorB, D.ColorR, D.ColorG, D.BanStandard, D.BanPauper, D.BanModern, D.BanPenny, D.BanCommander FROM Card as C, Carddata as D WHERE C.OracleID = D.OracleID AND C.Uname = '{}' AND D.Cardname = '{}' AND C.foil = 1".format(self.currentPlayer)
+    self.cur.execute(search)
+    res = self.cur.fetchall()
+    return res
+
+  def CardsinSet(self, set):
+    search = "SELECT D.Cardname, C.foil, C.LLocation, C.Sname, D.ColorW, D.ColorU, D.ColorB, D.ColorR, D.ColorG, D.BanStandard, D.BanPauper, D.BanModern, D.BanPenny, D.BanCommander FROM Card as C, Carddata as D WHERE C.OracleID = D.OracleID AND C.Uname = '{}' AND C.Sname = '{}'".format(self.currentPlayer, set)
+    self.cur.execute(search)
+    res = self.cur.fetchall()
+    return res
+
+  def CardsinLoc(self, loc):
+    search = "SELECT D.Cardname, C.foil, C.LLocation, C.Sname, D.ColorW, D.ColorU, D.ColorB, D.ColorR, D.ColorG, D.BanStandard, D.BanPauper, D.BanModern, D.BanPenny, D.BanCommander FROM Card as C, Carddata as D WHERE C.OracleID = D.OracleID AND C.Uname = '{}' AND C.LLocation = '{}'".format(self.currentPlayer, loc)
+    self.cur.execute(search)
+    res = self.cur.fetchall()
+    return res
+  
+  # thought this might be useful? -g
+  def findDBID(self, Cardname, OracleID, foil, LLocation, Sname, ColorW, ColorU, ColorB, ColorR, ColorG, BanStandard, BanPauper, BanModern, BanPenny, BanCommander):
+    search = "SELECT C.DBID FROM Card AS C, Carddata AS D WHERE C.OracleID = D.OracleID AND D.Cardname = '{}' AND D.OracleID = '{}' AND C.foil = {} AND C.LLocation = '{}' AND C.Sname = '{}' AND D.ColorW = {} AND D.ColorU = {} AND D.ColorB = {} AND D.ColorR = {} AND D.ColorG = {} AND D.BanStandard = {} AND D.BanPauper = {} AND D.BanModern = {} AND D.BanPenny = {} AND D.BanCommander = {}".format(Cardname, OracleID, foil, LLocation, Sname, ColorW, ColorU, ColorB, ColorR, ColorG, BanStandard, BanPauper, BanModern, BanPenny, BanCommander)
+    self.cur.execute(search)
+    res = self.cur.fetchall()
+    return res
+
+  def editCardL(self, DBID, location):
+    edit = "UPDATE Card AS C SET C.LLocation = '{}' AND C.Pname = '{}' AND C.DBID = {}".format(location, self.currentPlayer, DBID)
+    self.cur.execute(edit)
+    self.mydb.commit()
+
   def deleteCard(self, DBID):
-    if self.isLoggedIn():
-      remove = "DELETE FROM Card WHERE Card.DBID = '{}'".format(DBID)
-      self.cur.execute(remove)
+    remove = "DELETE FROM Card WHERE Card.DBID = '{}' CASCADE".format(DBID)
+    self.cur.execute(remove)
+    self.mydb.commit()
 
   def isLoggedIn(self):
-    return not self.currentPlayer == ''
+    return not len(self.currentPlayer) == 0
   
   def logOut(self):
     self.currentPlayer = ''
+
+  # api stuff below
   
   #Check requested Card is available
   def requestCheck(self, name, loc, foil):
@@ -273,8 +217,6 @@ class Mdb:
 
 
   #Parse dictionary entry apart and enter it into the data base
-  
-# note to gabby: ternary statements are like (false, true)[condition]
   
 if __name__ == "__main__":
   Taco = Mdb()
